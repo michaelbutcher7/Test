@@ -5,317 +5,254 @@ import {
   CheckCircle2, 
   AlertTriangle, 
   Lightbulb, 
-  ArrowRightLeft,
-  Settings,
-  BookOpen,
-  Scale,
-  RefreshCw,
-  ExternalLink
+  BookOpen, 
+  ShieldCheck,
+  Zap,
+  LayoutDashboard,
+  HelpCircle
 } from 'lucide-react';
 
-/**
- * KONFIGURATION: Prüfungskultur Daten & Logik
- */
-const EVALUATION_CONFIG = {
-  questions: [
-    {
-      id: 'competence',
-      title: 'Welche Kompetenzstufe steht im Fokus?',
-      options: [
-        { label: 'Reproduktion & Basiswissen', value: 'low', icon: <BookOpen className="w-5 h-5" /> },
-        { label: 'Anwendung & Transfer', value: 'mid', icon: <Settings className="w-5 h-5" /> },
-        { label: 'Reflexion, Kritik & Kreation', value: 'high', icon: <Lightbulb className="w-5 h-5" /> }
-      ]
-    },
-    {
-      id: 'setting',
-      title: 'In welchem Setting findet die Prüfung statt?',
-      options: [
-        { label: 'Präsenz (unter Aufsicht)', value: 'supervised', icon: <CheckCircle2 className="w-5 h-5" /> },
-        { label: 'Häusliche Arbeit / Offenes Setting', value: 'unsupervised', icon: <Info className="w-5 h-5" /> }
-      ]
-    },
-    {
-      id: 'goal',
-      title: 'Was ist das primäre Ziel des Prüfungsprodukts?',
-      options: [
-        { label: 'Sprachliche Korrektheit / Form', value: 'form', icon: <Scale className="w-5 h-5" /> },
-        { label: 'Inhaltliche Tiefe & Eigenleistung', value: 'content', icon: <ArrowRightLeft className="w-5 h-5" /> }
-      ]
-    }
-  ],
-  recommendations: {
-    unsupervised: {
-      type: 'KI-Integriert / KI-Reflektiert',
-      description: 'Da die Arbeit nicht beaufsichtigt wird, ist ein Verbot von KI kaum kontrollierbar. Nutzen Sie die KI als Partner oder Gegenstand der Prüfung.',
-      tips: [
-        'Prüfen Sie den Prozess (z.B. durch Reflexionsgespräche).',
-        'Lassen Sie KI-Ergebnisse kritisch bewerten.',
-        'Fokus auf Quellenarbeit und lokale Bezüge.'
-      ],
-      color: 'bg-blue-50 border-blue-200 text-blue-800',
-      iconColor: 'text-blue-600'
-    },
-    lowSupervised: {
-      type: 'KI-Frei (Basis-Check)',
-      description: 'Um grundlegende Wissensbestände ohne Hilfsmittel abzuprüfen, ist ein klassisches Design sinnvoll.',
-      tips: [
-        'Handschriftliche Prüfung in Präsenz.',
-        'Konzentration auf "In-Kopf-Wissen".',
-        'Sicherstellung der Anschlussfähigkeit für komplexere Aufgaben.'
-      ],
-      color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
-      iconColor: 'text-emerald-600'
-    },
-    hybrid: {
-      type: 'Hybrides Design / KI-Selektiv',
-      description: 'KI kann punktuell zur Unterstützung (Scaffolding) oder Ideengenerierung genutzt werden, während die Kernleistung menschlich bleibt.',
-      tips: [
-        'KI für Brainstorming erlauben, aber Kennzeichnungspflicht einführen.',
-        'Vergleich Mensch vs. Maschine als Teilaufgabe.',
-        'Transferleistungen fordern, die über KI-Muster hinausgehen.'
-      ],
-      color: 'bg-indigo-50 border-indigo-200 text-indigo-800',
-      iconColor: 'text-indigo-600'
-    }
+// --- Daten & Logik ---
+
+const RECOMMENDATIONS = {
+  ai_integrated: {
+    title: "KI-integriertes Prüfungsdesign",
+    description: "In diesem Szenario ist die KI ein Werkzeug, das den Lernprozess unterstützt oder selbst Gegenstand der Reflexion ist.",
+    tips: [
+      "Fokus auf den Prozess: Bewerten Sie Entwürfe und Reflexionen über die KI-Nutzung.",
+      "Kritisches Denken: Lassen Sie Schüler KI-Outputs auf Fehler und Biases prüfen.",
+      "Personalisierung: Nutzen Sie KI für individuelles Feedback im Lernprozess (formativ).",
+      "Transparenz: Klare Regeln, welche Prompts und Tools erlaubt sind."
+    ],
+    color: "bg-blue-50 border-blue-200 text-blue-800"
+  },
+  ai_restricted: {
+    title: "KI-freies / KI-geschütztes Design",
+    description: "Hier steht die Eigenleistung ohne technisches Outsourcing im Vordergrund, oft um Basiskompetenzen abzusichern.",
+    tips: [
+      "Präsenzformate: Schriftliche Ausarbeitung unter Aufsicht in der Schule.",
+      "Mündliche Prüfungen: Fokus auf den direkten Dialog und Transferleistungen.",
+      "Handschriftliche Dokumentation: Skizzen und Gedankenwege sichtbar machen.",
+      "Methodenwechsel: Experimente oder praktische Vorführungen einbauen."
+    ],
+    color: "bg-amber-50 border-amber-200 text-amber-800"
   }
 };
 
-/**
- * UNTERKOMPONENTE: Fortschrittsanzeige
- */
-const ProgressIndicator = ({ current, total }) => (
-  <div className="mb-6 flex justify-between items-center">
-    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-      Schritt {current + 1} von {total}
-    </span>
-    <div className="flex gap-1.5">
-      {Array.from({ length: total }).map((_, i) => (
-        <div 
-          key={i} 
-          className={`h-1.5 w-8 rounded-full transition-all duration-300 ${i <= current ? 'bg-blue-600' : 'bg-slate-200'}`} 
-        />
-      ))}
-    </div>
+const QUESTIONS = [
+  {
+    id: 'format',
+    text: 'Welche Art der Leistungsfeststellung planen Sie?',
+    options: [
+      { label: 'Formativ (Lernbegleitend, Feedback-orientiert)', value: 'formative', score: 2 },
+      { label: 'Summativ (Abschlussorientiert, Note steht im Fokus)', value: 'summative', score: 0 }
+    ]
+  },
+  {
+    id: 'goal',
+    text: 'Was ist das primäre Lernziel?',
+    options: [
+      { label: 'Kritisches Bewerten & Reflektieren von Inhalten', value: 'critical', score: 2 },
+      { label: 'Nachweis von Basiswissen & Standardverfahren', value: 'basic', score: 0 },
+      { label: 'Kreative Problemlösung & Transfer', value: 'creative', score: 1 }
+    ]
+  },
+  {
+    id: 'context',
+    text: 'Wo findet die Bearbeitung hauptsächlich statt?',
+    options: [
+      { label: 'Häusliche Vorbereitung / Langzeitprojekt', value: 'home', score: 2 },
+      { label: 'Kontrollierte Umgebung (Klassenzimmer/Aufsicht)', value: 'school', score: 0 }
+    ]
+  }
+];
+
+// --- Komponenten ---
+
+const Card = ({ children, className = "" }) => (
+  <div className={`bg-white rounded-xl shadow-sm border p-6 ${className}`}>
+    {children}
   </div>
 );
 
-/**
- * UNTERKOMPONENTE: Sidebar Karte
- */
-const SidebarCard = ({ title, icon: Icon, children, variant = "blue" }) => {
-  const themes = {
-    blue: "bg-blue-600 text-white shadow-blue-100",
-    dark: "bg-slate-800 text-slate-100 shadow-slate-200",
-    white: "bg-white border border-slate-200 text-slate-800"
-  };
-  
-  return (
-    <div className={`rounded-2xl p-6 shadow-lg transition-transform hover:scale-[1.02] ${themes[variant]}`}>
-      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
-        {Icon && <Icon className="w-5 h-5" />} {title}
-      </h3>
-      <div className="text-sm opacity-95 leading-relaxed">
-        {children}
-      </div>
-    </div>
-  );
-};
-
-/**
- * HAUPTKOMPONENTE
- */
 const App = () => {
-  const [step, setStep] = useState(0);
+  const [activeTab, setActiveTab] = useState('decision'); // 'decision' or 'guidelines'
   const [answers, setAnswers] = useState({});
-  const [showResult, setShowResult] = useState(false);
+  const [currentStep, setCurrentStep] = useState(0);
 
-  const handleAnswer = (value) => {
-    const newAnswers = { ...answers, [EVALUATION_CONFIG.questions[step].id]: value };
-    setAnswers(newAnswers);
-    if (step < EVALUATION_CONFIG.questions.length - 1) {
-      setStep(step + 1);
+  const handleAnswer = (questionId, value) => {
+    setAnswers(prev => ({ ...prev, [questionId]: value }));
+    if (currentStep < QUESTIONS.length - 1) {
+      setCurrentStep(prev => prev + 1);
     } else {
-      setShowResult(true);
+      setCurrentStep(QUESTIONS.length); // End reached
     }
   };
 
-  const reset = () => {
-    setStep(0);
+  const resetDecision = () => {
     setAnswers({});
-    setShowResult(false);
+    setCurrentStep(0);
   };
 
-  const recommendation = useMemo(() => {
-    if (!showResult) return null;
-    const { competence, setting } = answers;
+  const finalRecommendation = useMemo(() => {
+    if (Object.keys(answers).length < QUESTIONS.length) return null;
+    
+    let totalScore = 0;
+    QUESTIONS.forEach(q => {
+      const selectedOption = q.options.find(o => o.value === answers[q.id]);
+      totalScore += selectedOption?.score || 0;
+    });
 
-    if (setting === 'unsupervised') return EVALUATION_CONFIG.recommendations.unsupervised;
-    if (competence === 'low' && setting === 'supervised') return EVALUATION_CONFIG.recommendations.lowSupervised;
-    return EVALUATION_CONFIG.recommendations.hybrid;
-  }, [showResult, answers]);
+    return totalScore >= 3 ? RECOMMENDATIONS.ai_integrated : RECOMMENDATIONS.ai_restricted;
+  }, [answers]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-900 selection:bg-blue-100">
-      <div className="max-w-5xl mx-auto">
-        
-        {/* Header Sektion */}
-        <header className="mb-12 text-center space-y-3">
-          <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
-            BW Schul-Edition 2025
-          </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight md:text-5xl">
-            Prüfungskultur <span className="text-blue-600">&amp;</span> KI
-          </h1>
-          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
-            Interaktive Entscheidungshilfe für rechtssichere und zeitgemäße Lernergebnis-Überprüfungen.
-          </p>
-        </header>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans p-4 md:p-8">
+      {/* Header */}
+      <header className="max-w-4xl mx-auto mb-8 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-slate-800 mb-2">
+          KI-Prüfungs-Navigator BW
+        </h1>
+        <p className="text-slate-600">
+          Entscheidungshilfe für eine zeitgemäße Prüfungskultur gemäß Leitfaden Baden-Württemberg
+        </p>
+      </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          
-          {/* Hauptbereich */}
-          <div className="lg:col-span-8 space-y-6">
-            {!showResult ? (
-              <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 transition-all">
-                <ProgressIndicator current={step} total={EVALUATION_CONFIG.questions.length} />
-                
-                <h2 className="text-2xl font-bold text-slate-800 mb-8 leading-tight">
-                  {EVALUATION_CONFIG.questions[step].title}
-                </h2>
-                
-                <div className="grid gap-4">
-                  {EVALUATION_CONFIG.questions[step].options.map((opt) => (
+      {/* Navigation */}
+      <nav className="max-w-4xl mx-auto mb-8 flex justify-center gap-4">
+        <button 
+          onClick={() => setActiveTab('decision')}
+          className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all ${activeTab === 'decision' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-600 border'}`}
+        >
+          <HelpCircle size={18} /> Entscheidungshilfe
+        </button>
+        <button 
+          onClick={() => setActiveTab('guidelines')}
+          className={`flex items-center gap-2 px-6 py-2 rounded-full transition-all ${activeTab === 'guidelines' ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-slate-600 border'}`}
+        >
+          <LayoutDashboard size={18} /> Empfehlungen
+        </button>
+      </nav>
+
+      <main className="max-w-4xl mx-auto">
+        {activeTab === 'decision' ? (
+          <div className="space-y-6">
+            {currentStep < QUESTIONS.length ? (
+              <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div className="mb-4 flex justify-between items-center">
+                  <span className="text-xs font-semibold text-indigo-600 uppercase tracking-wider">Schritt {currentStep + 1} von {QUESTIONS.length}</span>
+                  <div className="w-24 h-2 bg-slate-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-indigo-500 transition-all duration-300" 
+                      style={{ width: `${((currentStep + 1) / QUESTIONS.length) * 100}%` }}
+                    />
+                  </div>
+                </div>
+                <h2 className="text-xl font-semibold mb-6">{QUESTIONS[currentStep].text}</h2>
+                <div className="space-y-3">
+                  {QUESTIONS[currentStep].options.map((opt) => (
                     <button
                       key={opt.value}
-                      onClick={() => handleAnswer(opt.value)}
-                      className="w-full flex items-center p-5 rounded-2xl border-2 border-slate-50 bg-slate-50/50 hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-md transition-all text-left group"
+                      onClick={() => handleAnswer(QUESTIONS[currentStep].id, opt.value)}
+                      className="w-full text-left p-4 rounded-lg border-2 border-slate-100 hover:border-indigo-400 hover:bg-indigo-50 transition-all flex justify-between items-center group"
                     >
-                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:text-blue-600 transition-colors mr-5">
-                        {opt.icon}
-                      </div>
-                      <span className="font-semibold text-slate-700 group-hover:text-blue-900">{opt.label}</span>
-                      <ChevronRight className="ml-auto w-5 h-5 text-slate-300 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
+                      <span className="font-medium">{opt.label}</span>
+                      <ChevronRight className="text-slate-300 group-hover:text-indigo-500 transition-colors" size={20} />
                     </button>
                   ))}
                 </div>
-              </section>
+              </Card>
             ) : (
-              <section className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                {recommendation && (
-                  <div className={`p-8 rounded-3xl border-2 shadow-sm ${recommendation.color}`}>
-                    <h2 className="text-2xl font-black mb-4 flex items-center gap-3">
-                      <CheckCircle2 className="w-8 h-8" /> 
-                      Empfehlung: {recommendation.type}
-                    </h2>
-                    <p className="text-lg leading-relaxed mb-8 opacity-90">
-                      {recommendation.description}
-                    </p>
-                    
-                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40">
-                      <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
-                        <Lightbulb className={`w-4 h-4 ${recommendation.iconColor}`} /> Praxis-Strategien
-                      </h3>
-                      <ul className="space-y-3">
-                        {recommendation.tips.map((tip, i) => (
-                          <li key={i} className="flex gap-3 items-start text-sm md:text-base font-medium">
-                            <span className={`${recommendation.iconColor} mt-1`}>&bull;</span> 
-                            {tip}
-                          </li>
-                        ))}
-                      </ul>
+              <div className="animate-in zoom-in-95 duration-500">
+                <Card className={`${finalRecommendation.color} border-2`}>
+                  <div className="flex items-start gap-4 mb-4">
+                    <div className="p-3 rounded-full bg-white/50 border border-current">
+                      {finalRecommendation.title.includes('integriert') ? <Zap size={24} /> : <ShieldCheck size={24} />}
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold">{finalRecommendation.title}</h2>
+                      <p className="mt-1 opacity-90">{finalRecommendation.description}</p>
                     </div>
                   </div>
-                )}
-                
-                <button 
-                  onClick={reset}
-                  className="group w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-slate-300"
-                >
-                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
-                  Neu bewerten
-                </button>
-              </section>
-            )}
-
-            {/* BW Kontext Sektion */}
-            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
-              <h2 className="text-xl font-bold mb-5 flex items-center gap-3 text-slate-800">
-                <Info className="text-blue-500 w-6 h-6" /> Zeitgem&auml;&szlig;es Pr&uuml;fen in BW
-              </h2>
-              <div className="text-slate-600 leading-relaxed space-y-4">
-                <p className="text-sm md:text-base">
-                  Die aktuelle Leitlinie in BW fordert eine Abkehr von isolierten Wissensabfragen hin zu 
-                  <strong> prozessbegleitenden Formaten</strong>. KI wird dabei nicht als &quot;Feind&quot;, sondern als 
-                  digitales Werkzeug betrachtet, dessen Nutzung kritisch reflektiert werden muss.
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
-                  <div className="p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400">
-                    <h4 className="font-bold text-amber-900 text-sm mb-1 uppercase tracking-tight">Transparenz-Gebot</h4>
-                    <p className="text-xs text-amber-800/80">Alle Hilfsmittel m&uuml;ssen im Erwartungshorizont klar benannt sein.</p>
+                  
+                  <div className="bg-white/80 rounded-lg p-6 mt-6 shadow-sm">
+                    <h3 className="font-bold mb-4 flex items-center gap-2 text-slate-800">
+                      <Lightbulb size={20} className="text-amber-500" /> Gestaltungstipps für Sie:
+                    </h3>
+                    <ul className="space-y-3">
+                      {finalRecommendation.tips.map((tip, i) => (
+                        <li key={i} className="flex items-start gap-3 text-slate-700">
+                          <CheckCircle2 size={18} className="text-green-500 shrink-0 mt-0.5" />
+                          <span>{tip}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
-                  <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-400">
-                    <h4 className="font-bold text-blue-900 text-sm mb-1 uppercase tracking-tight">Prozess &gt; Produkt</h4>
-                    <p className="text-xs text-blue-800/80">Die Dokumentation des Entstehungsweges gewinnt an Gewichtung.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
 
-          {/* Sidebar / Ressourcen */}
-          <aside className="lg:col-span-4 space-y-6">
-            <SidebarCard title="Rechtlicher Rahmen" icon={Scale} variant="blue">
-              KI-Tools gelten als &quot;nicht zugelassene Hilfsmittel&quot;, sofern sie nicht explizit erlaubt wurden. 
-              Eine Kennzeichnungspflicht (KI-Deklaration) ist f&uuml;r alle schriftlichen Leistungen in BW dringend empfohlen.
-            </SidebarCard>
-
-            <SidebarCard title="Das S-O-S Prinzip" icon={ArrowRightLeft} variant="dark">
-              <div className="space-y-4">
-                <div>
-                  <span className="text-blue-400 font-black">S</span>ubstitution: KI ersetzt Aufgaben 1:1.
-                </div>
-                <div>
-                  <span className="text-purple-400 font-black">O</span>ptimierung: Effizienzsteigerung.
-                </div>
-                <div>
-                  <span className="text-amber-400 font-black">S</span>innstiftung: Neue, KI-gest&uuml;tzte Formate.
-                </div>
-              </div>
-            </SidebarCard>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-6">
-              <h4 className="font-bold text-[10px] uppercase text-slate-400 mb-4 tracking-[0.2em]">Offizielle Quellen</h4>
-              <nav className="space-y-3">
-                {[
-                  { label: "ZSL BW: KI-Leitfaden", url: "#" },
-                  { label: "KM-Erlass: Leistungsfeststellung", url: "#" },
-                  { label: "IBBW: Prüfungskultur-Monitor", url: "#" }
-                ].map((link, idx) => (
-                  <a 
-                    key={idx}
-                    href={link.url}
-                    className="flex items-center justify-between text-sm font-semibold text-slate-600 hover:text-blue-600 group py-1"
+                  <button 
+                    onClick={resetDecision}
+                    className="mt-8 text-sm font-medium underline underline-offset-4 opacity-70 hover:opacity-100 transition-opacity"
                   >
-                    {link.label}
-                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-                  </a>
-                ))}
-              </nav>
-            </div>
-          </aside>
-        </div>
-
-        {/* Footer */}
-        <footer className="mt-16 pt-8 border-t border-slate-200 text-center space-y-2 pb-10">
-          <p className="text-slate-400 text-sm font-medium italic">
-            &quot;Von der Ergebnisorientierung zur Kompetenzorientierung.&quot;
-          </p>
-          <div className="text-[10px] text-slate-300 uppercase tracking-widest">
-            Open Source Education Tool &bull; Baden-W&uuml;rttemberg
+                    Analyse neu starten
+                  </button>
+                </Card>
+              </div>
+            )}
           </div>
-        </footer>
-      </div>
+        ) : (
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card className="md:col-span-2 bg-indigo-900 text-indigo-50 border-none">
+              <h2 className="text-2xl font-bold mb-4 flex items-center gap-2">
+                <BookOpen /> Der BW-Kontext
+              </h2>
+              <p className="opacity-90 leading-relaxed">
+                In Baden-Württemberg rückt das „Prüfen im Zeitalter der KI“ die Kompetenzorientierung stärker in den Fokus. 
+                Es geht nicht mehr nur um das <strong>Ergebnis</strong>, sondern verstärkt um den <strong>Weg dorthin</strong>. 
+                Die Kultusverwaltung betont: KI soll dort integriert werden, wo sie den Lernprozess bereichert, 
+                während bei Leistungsnachweisen die Eigenständigkeit gesichert bleiben muss.
+              </p>
+            </Card>
+
+            <Card>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2">
+                <Info className="text-blue-500" size={20} /> Wann ist KI sinnvoll?
+              </h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li>• <strong>Brainstorming:</strong> Ideen generieren und strukturieren.</li>
+                <li>• <strong>Feedback:</strong> Sofortige Rückmeldung bei Übungsphasen.</li>
+                <li>• <strong>Differenzierung:</strong> Texte in verschiedene Niveaustufen übersetzen.</li>
+                <li>• <strong>KI-Literacy:</strong> Das Tool selbst zum Unterrichtsthema machen.</li>
+              </ul>
+            </Card>
+
+            <Card>
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2 border-b pb-2">
+                <AlertTriangle className="text-amber-500" size={20} /> Wann ist KI kritisch?
+              </h3>
+              <ul className="space-y-3 text-sm text-slate-600">
+                <li>• <strong>Basissicherung:</strong> Abfrage von reinem Reproduktionswissen.</li>
+                <li>• <strong>Hausarbeiten:</strong> Ohne Reflexionsbericht schwer verifizierbar.</li>
+                <li>• <strong>Summative Tests:</strong> Wenn die KI die kognitive Leistung komplett übernimmt.</li>
+                <li>• <strong>Datenschutz:</strong> Beachtung der DSGVO-konformen Tools.</li>
+              </ul>
+            </Card>
+            
+            <Card className="md:col-span-2 border-l-4 border-l-green-500">
+              <h3 className="text-lg font-bold mb-2">Allgemeine Empfehlung</h3>
+              <p className="text-slate-600">
+                Nutzen Sie das <strong>„Zwei-Säulen-Modell“</strong>: 
+                Säule 1 (Formativ) nutzt KI als Co-Pilot für maximales Wachstum. 
+                Säule 2 (Summativ) nutzt kontrollierte Umgebungen oder reflexive Formate, um die echte Eigenleistung sicherzustellen. 
+                Verschieben Sie den Fokus von <em>„Was weißt du?“</em> hin zu <em>„Wie hast du dieses Ergebnis mit deinen Werkzeugen erarbeitet?“</em>.
+              </p>
+            </Card>
+          </div>
+        )}
+      </main>
+
+      <footer className="max-w-4xl mx-auto mt-12 pt-8 border-t text-center text-slate-400 text-xs">
+        Entwickelt für die moderne Schulentwicklung • © 2024 • Pädagogisches Framework BW
+      </footer>
     </div>
   );
 };
