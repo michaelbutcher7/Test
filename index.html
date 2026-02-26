@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ChevronRight, 
   Info, 
@@ -8,15 +8,17 @@ import {
   ArrowRightLeft,
   Settings,
   BookOpen,
-  Scale
+  Scale,
+  RefreshCw,
+  ExternalLink
 } from 'lucide-react';
 
-const App = () => {
-  const [step, setStep] = useState(0);
-  const [answers, setAnswers] = useState({});
-  const [showResult, setShowResult] = useState(false);
-
-  const questions = [
+/**
+ * CONFIGURATION: Prüfungskultur Daten & Logik
+ * Zentralisierte Datenhaltung für einfachere Wartung auf GitHub.
+ */
+const EVALUATION_CONFIG = {
+  questions: [
     {
       id: 'competence',
       title: 'Welche Kompetenzstufe steht im Fokus?',
@@ -42,12 +44,97 @@ const App = () => {
         { label: 'Inhaltliche Tiefe & Eigenleistung', value: 'content', icon: <ArrowRightLeft className="w-5 h-5" /> }
       ]
     }
-  ];
+  ],
+  recommendations: {
+    unsupervised: {
+      type: 'KI-Integriert / KI-Reflektiert',
+      description: 'Da die Arbeit nicht beaufsichtigt wird, ist ein Verbot von KI kaum kontrollierbar. Nutzen Sie die KI als Partner oder Gegenstand der Prüfung.',
+      tips: [
+        'Prüfen Sie den Prozess (z.B. durch Reflexionsgespräche).',
+        'Lassen Sie KI-Ergebnisse kritisch bewerten.',
+        'Fokus auf Quellenarbeit und lokale Bezüge.'
+      ],
+      color: 'bg-blue-50 border-blue-200 text-blue-800',
+      iconColor: 'text-blue-600'
+    },
+    lowSupervised: {
+      type: 'KI-Frei (Basis-Check)',
+      description: 'Um grundlegende Wissensbestände ohne Hilfsmittel abzuprüfen, ist ein klassisches Design sinnvoll.',
+      tips: [
+        'Handschriftliche Prüfung in Präsenz.',
+        'Konzentration auf "In-Kopf-Wissen".',
+        'Sicherstellung der Anschlussfähigkeit für komplexere Aufgaben.'
+      ],
+      color: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+      iconColor: 'text-emerald-600'
+    },
+    hybrid: {
+      type: 'Hybrides Design / KI-Selektiv',
+      description: 'KI kann punktuell zur Unterstützung (Scaffolding) oder Ideengenerierung genutzt werden, während die Kernleistung menschlich bleibt.',
+      tips: [
+        'KI für Brainstorming erlauben, aber Kennzeichnungspflicht einführen.',
+        'Vergleich Mensch vs. Maschine als Teilaufgabe.',
+        'Transferleistungen fordern, die über KI-Muster hinausgehen.'
+      ],
+      color: 'bg-indigo-50 border-indigo-200 text-indigo-800',
+      iconColor: 'text-indigo-600'
+    }
+  }
+};
+
+/**
+ * SUB-COMPONENT: Progress Bar
+ */
+const ProgressIndicator = ({ current, total }) => (
+  <div className="mb-6 flex justify-between items-center">
+    <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+      Schritt {current + 1} von {total}
+    </span>
+    <div className="flex gap-1.5">
+      {Array.from({ length: total }).map((_, i) => (
+        <div 
+          key={i} 
+          className={`h-1.5 w-8 rounded-full transition-all duration-300 ${i <= current ? 'bg-blue-600' : 'bg-slate-200'}`} 
+        />
+      ))}
+    </div>
+  </div>
+);
+
+/**
+ * SUB-COMPONENT: Sidebar Card
+ */
+const SidebarCard = ({ title, icon: Icon, children, variant = "blue" }) => {
+  const themes = {
+    blue: "bg-blue-600 text-white shadow-blue-100",
+    dark: "bg-slate-800 text-slate-100 shadow-slate-200",
+    white: "bg-white border border-slate-200 text-slate-800"
+  };
+  
+  return (
+    <div className={`rounded-2xl p-6 shadow-lg transition-transform hover:scale-[1.02] ${themes[variant]}`}>
+      <h3 className="font-bold text-lg mb-3 flex items-center gap-2">
+        {Icon && <Icon className="w-5 h-5" />} {title}
+      </h3>
+      <div className="text-sm opacity-95 leading-relaxed">
+        {children}
+      </div>
+    </div>
+  );
+};
+
+/**
+ * MAIN COMPONENT
+ */
+const App = () => {
+  const [step, setStep] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResult, setShowResult] = useState(false);
 
   const handleAnswer = (value) => {
-    const newAnswers = { ...answers, [questions[step].id]: value };
+    const newAnswers = { ...answers, [EVALUATION_CONFIG.questions[step].id]: value };
     setAnswers(newAnswers);
-    if (step < questions.length - 1) {
+    if (step < EVALUATION_CONFIG.questions.length - 1) {
       setStep(step + 1);
     } else {
       setShowResult(true);
@@ -60,104 +147,81 @@ const App = () => {
     setShowResult(false);
   };
 
-  const getRecommendation = () => {
-    const { competence, setting, goal } = answers;
+  // Memoized result logic to prevent unnecessary re-calculations
+  const recommendation = useMemo(() => {
+    if (!showResult) return null;
+    const { competence, setting } = answers;
 
-    if (setting === 'unsupervised') {
-      return {
-        type: 'KI-Integriert / KI-Reflektiert',
-        description: 'Da die Arbeit nicht beaufsichtigt wird, ist ein Verbot von KI kaum kontrollierbar. Nutzen Sie die KI als Partner oder Gegenstand der Prüfung.',
-        tips: [
-          'Prüfen Sie den Prozess (z.B. durch Reflexionsgespräche).',
-          'Lassen Sie KI-Ergebnisse kritisch bewerten.',
-          'Fokus auf Quellenarbeit und lokale Bezüge.'
-        ],
-        color: 'bg-blue-50 border-blue-200 text-blue-800'
-      };
-    }
-
-    if (competence === 'low' && setting === 'supervised') {
-      return {
-        type: 'KI-Frei (Basis-Check)',
-        description: 'Um grundlegende Wissensbestände ohne Hilfsmittel abzuprüfen, ist ein klassisches Design sinnvoll.',
-        tips: [
-          'Handschriftliche Prüfung in Präsenz.',
-          'Konzentration auf "In-Kopf-Wissen".',
-          'Sicherstellung der Anschlussfähigkeit für komplexere Aufgaben.'
-        ],
-        color: 'bg-green-50 border-green-200 text-green-800'
-      };
-    }
-
-    return {
-      type: 'Hybrides Design / KI-Selektiv',
-      description: 'KI kann punktuell zur Unterstützung (Scaffolding) oder Ideengenerierung genutzt werden, während die Kernleistung menschlich bleibt.',
-      tips: [
-        'KI für Brainstorming erlauben, aber Kennzeichnungspflicht einführen.',
-        'Vergleich Mensch vs. Maschine als Teilaufgabe.',
-        'Transferleistungen fordern, die über KI-Muster hinausgehen.'
-      ],
-      color: 'bg-purple-50 border-purple-200 text-purple-800'
-    };
-  };
+    if (setting === 'unsupervised') return EVALUATION_CONFIG.recommendations.unsupervised;
+    if (competence === 'low' && setting === 'supervised') return EVALUATION_CONFIG.recommendations.lowSupervised;
+    return EVALUATION_CONFIG.recommendations.hybrid;
+  }, [showResult, answers]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans text-slate-900">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <header className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Prüfungskultur & KI (BW)</h1>
-          <p className="text-slate-600">Entscheidungshilfe für zeitgemäße Lernergebnis-Überprüfungen</p>
+    <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-900 selection:bg-blue-100">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* Header Section */}
+        <header className="mb-12 text-center space-y-3">
+          <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
+            BW Schul-Edition 2025
+          </div>
+          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight md:text-5xl">
+            Prüfungskultur <span className="text-blue-600">&</span> KI
+          </h1>
+          <p className="text-slate-500 text-lg max-w-2xl mx-auto">
+            Interaktive Entscheidungshilfe für rechtssichere und zeitgemäße Lernergebnis-Überprüfungen.
+          </p>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Wizard / Result Area */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* Main Interaction Area */}
+          <div className="lg:col-span-8 space-y-6">
             {!showResult ? (
-              <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-                <div className="mb-6 flex justify-between items-center">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400">Schritt {step + 1} von {questions.length}</span>
-                  <div className="flex gap-1">
-                    {questions.map((_, i) => (
-                      <div key={i} className={`h-1.5 w-6 rounded-full ${i <= step ? 'bg-blue-500' : 'bg-slate-100'}`} />
-                    ))}
-                  </div>
-                </div>
+              <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 transition-all">
+                <ProgressIndicator current={step} total={EVALUATION_CONFIG.questions.length} />
                 
-                <h2 className="text-xl font-bold mb-6">{questions[step].title}</h2>
+                <h2 className="text-2xl font-bold text-slate-800 mb-8 leading-tight">
+                  {EVALUATION_CONFIG.questions[step].title}
+                </h2>
                 
-                <div className="space-y-3">
-                  {questions[step].options.map((opt) => (
+                <div className="grid gap-4">
+                  {EVALUATION_CONFIG.questions[step].options.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => handleAnswer(opt.value)}
-                      className="w-full flex items-center p-4 rounded-xl border-2 border-slate-100 hover:border-blue-400 hover:bg-blue-50 transition-all text-left group"
+                      className="w-full flex items-center p-5 rounded-2xl border-2 border-slate-50 bg-slate-50/50 hover:border-blue-500 hover:bg-blue-50/50 hover:shadow-md transition-all text-left group"
                     >
-                      <div className="p-2 bg-slate-50 rounded-lg group-hover:bg-blue-100 mr-4 transition-colors">
+                      <div className="p-3 bg-white rounded-xl shadow-sm group-hover:text-blue-600 transition-colors mr-5">
                         {opt.icon}
                       </div>
-                      <span className="font-medium">{opt.label}</span>
-                      <ChevronRight className="ml-auto w-5 h-5 text-slate-300" />
+                      <span className="font-semibold text-slate-700 group-hover:text-blue-900">{opt.label}</span>
+                      <ChevronRight className="ml-auto w-5 h-5 text-slate-300 group-hover:text-blue-400 group-hover:translate-x-1 transition-all" />
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
             ) : (
-              <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className={`p-6 rounded-2xl border-2 ${getRecommendation().color}`}>
-                  <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">
-                    <CheckCircle2 /> Empfehlung: {getRecommendation().type}
+              <section className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
+                <div className={`p-8 rounded-3xl border-2 shadow-sm ${recommendation.color}`}>
+                  <h2 className="text-2xl font-black mb-4 flex items-center gap-3">
+                    <CheckCircle2 className="w-8 h-8" /> 
+                    Empfehlung: {recommendation.type}
                   </h2>
-                  <p className="mb-6 opacity-90">{getRecommendation().description}</p>
+                  <p className="text-lg leading-relaxed mb-8 opacity-90">
+                    {recommendation.description}
+                  </p>
                   
-                  <div className="bg-white/50 rounded-xl p-4">
-                    <h3 className="font-bold mb-3 flex items-center gap-2">
-                      <Lightbulb className="w-4 h-4" /> Praxis-Tipps:
+                  <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40">
+                    <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
+                      <Lightbulb className={`w-4 h-4 ${recommendation.iconColor}`} /> Praxis-Strategien
                     </h3>
-                    <ul className="space-y-2">
-                      {getRecommendation().tips.map((tip, i) => (
-                        <li key={i} className="flex gap-2 items-start text-sm">
-                          <span className="text-blue-600 font-bold">•</span> {tip}
+                    <ul className="space-y-3">
+                      {recommendation.tips.map((tip, i) => (
+                        <li key={i} className="flex gap-3 items-start text-sm md:text-base font-medium">
+                          <span className={`${recommendation.iconColor} mt-1`}>•</span> 
+                          {tip}
                         </li>
                       ))}
                     </ul>
@@ -166,86 +230,90 @@ const App = () => {
                 
                 <button 
                   onClick={reset}
-                  className="w-full py-3 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 transition-colors"
+                  className="group w-full py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all flex items-center justify-center gap-2 shadow-lg hover:shadow-slate-300"
                 >
-                  Neu starten
+                  <RefreshCw className="w-5 h-5 group-hover:rotate-180 transition-transform duration-500" />
+                  Neu bewerten
                 </button>
-              </div>
+              </section>
             )}
 
-            {/* General Recommendations Section */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <Info className="text-blue-500" /> Allgemeine Empfehlung (BW)
+            {/* Global BW Context Section */}
+            <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
+              <h2 className="text-xl font-bold mb-5 flex items-center gap-3 text-slate-800">
+                <Info className="text-blue-500 w-6 h-6" /> Zeitgemäßes Prüfen in BW
               </h2>
-              <div className="prose prose-slate prose-sm max-w-none space-y-4">
-                <p>
-                  In Baden-Württemberg orientiert sich die Prüfungskultur zunehmend am 
-                  <strong> "Lernen im 21. Jahrhundert" (4K-Modell)</strong>. Der Fokus verschiebt sich 
-                  vom reinen Wissensabruf hin zu prozessorientierten Leistungen.
+              <div className="text-slate-600 leading-relaxed space-y-4">
+                <p className="text-sm md:text-base">
+                  Die aktuelle Leitlinie in BW fordert eine Abkehr von isolierten Wissensabfragen hin zu 
+                  <strong> prozessbegleitenden Formaten</strong>. KI wird dabei nicht als "Feind", sondern als 
+                  digitales Werkzeug betrachtet, dessen Nutzung kritisch reflektiert werden muss.
                 </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border-l-4 border-amber-400 pl-4 py-1">
-                    <h4 className="font-bold text-slate-800 m-0">Transparenz</h4>
-                    <p className="text-slate-600 m-0 text-xs">Schüler müssen wissen, wann KI erlaubt ist und wie sie deklariert werden muss.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
+                  <div className="p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400">
+                    <h4 className="font-bold text-amber-900 text-sm mb-1 uppercase tracking-tight">Transparenz-Gebot</h4>
+                    <p className="text-xs text-amber-800/80">Alle Hilfsmittel müssen im Erwartungshorizont klar benannt sein.</p>
                   </div>
-                  <div className="border-l-4 border-blue-400 pl-4 py-1">
-                    <h4 className="font-bold text-slate-800 m-0">Prozessbewertung</h4>
-                    <p className="text-slate-600 m-0 text-xs">Nicht nur das Endprodukt zählt, sondern auch Entwürfe und Reflexionen.</p>
+                  <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-400">
+                    <h4 className="font-bold text-blue-900 text-sm mb-1 uppercase tracking-tight">Prozess {' > '} Produkt</h4>
+                    <p className="text-xs text-blue-800/80">Die Dokumentation des Entstehungsweges gewinnt an Gewichtung.</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar Info */}
-          <div className="space-y-6">
-            <div className="bg-blue-600 text-white rounded-2xl p-6 shadow-lg shadow-blue-200">
-              <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
-                <Scale className="w-5 h-5" /> Rechtlicher Rahmen
-              </h3>
-              <p className="text-sm opacity-90 leading-relaxed">
-                Gemäß aktuellem Stand in BW (KM-Erlasse) gilt: KI-Tools sind Hilfsmittel. 
-                Ihre Nutzung ohne Erlaubnis kann als Täuschung gewertet werden. 
-                Schulen sollten klare "Nutzungsordnungen" für Leistungsfeststellungen festlegen.
-              </p>
-            </div>
+          {/* Sidebar / Resources */}
+          <aside className="lg:col-span-4 space-y-6">
+            <SidebarCard title="Rechtlicher Rahmen" icon={Scale} variant="blue">
+              KI-Tools gelten als "nicht zugelassene Hilfsmittel", sofern sie nicht explizit erlaubt wurden. 
+              Eine Kennzeichnungspflicht (KI-Deklaration) ist für alle schriftlichen Leistungen in BW dringend empfohlen.
+            </SidebarCard>
 
-            <div className="bg-slate-800 text-slate-100 rounded-2xl p-6">
-              <h3 className="font-bold text-lg mb-4">Das "S-O-S" Modell</h3>
-              <div className="space-y-4 text-sm">
-                <div className="flex gap-3">
-                  <div className="bg-blue-500/20 text-blue-400 px-2 py-1 rounded font-mono font-bold h-fit">S</div>
-                  <div><strong>Substitution:</strong> KI ersetzt menschliche Arbeit (kritisch bei Prüfungen).</div>
+            <SidebarCard title="Das S-O-S Prinzip" icon={ArrowRightLeft} variant="dark">
+              <div className="space-y-4">
+                <div>
+                  <span className="text-blue-400 font-black">S</span>ubstitution: KI ersetzt Aufgaben 1:1.
                 </div>
-                <div className="flex gap-3">
-                  <div className="bg-purple-500/20 text-purple-400 px-2 py-1 rounded font-mono font-bold h-fit">O</div>
-                  <div><strong>Optimierung:</strong> KI verbessert den Workflow / Struktur.</div>
+                <div>
+                  <span className="text-purple-400 font-black">O</span>ptimierung: Effizienzsteigerung.
                 </div>
-                <div className="flex gap-3">
-                  <div className="bg-amber-500/20 text-amber-400 px-2 py-1 rounded font-mono font-bold h-fit">S</div>
-                  <div><strong>Sinnstiftung:</strong> KI ermöglicht völlig neue Aufgabenformate.</div>
+                <div>
+                  <span className="text-amber-400 font-black">S</span>innstiftung: Neue, KI-gestützte Formate.
                 </div>
               </div>
-            </div>
+            </SidebarCard>
 
-            <div className="bg-white rounded-2xl border border-slate-200 p-4">
-              <h4 className="font-bold text-xs uppercase text-slate-400 mb-3 tracking-widest">Wichtige Ressourcen</h4>
-              <ul className="space-y-2 text-sm font-medium">
-                <li className="flex items-center gap-2 text-blue-600 hover:underline cursor-pointer">
-                  <ChevronRight className="w-4 h-4" /> ZSL BW: KI im Unterricht
-                </li>
-                <li className="flex items-center gap-2 text-blue-600 hover:underline cursor-pointer">
-                  <ChevronRight className="w-4 h-4" /> IBBW: Neue Prüfungskultur
-                </li>
-              </ul>
+            <div className="bg-white rounded-2xl border border-slate-200 p-6">
+              <h4 className="font-bold text-[10px] uppercase text-slate-400 mb-4 tracking-[0.2em]">Offizielle Quellen</h4>
+              <nav className="space-y-3">
+                {[
+                  { label: "ZSL BW: KI-Leitfaden", url: "#" },
+                  { label: "KM-Erlass: Leistungsfeststellung", url: "#" },
+                  { label: "IBBW: Prüfungskultur-Monitor", url: "#" }
+                ].map((link, idx) => (
+                  <a 
+                    key={idx}
+                    href={link.url}
+                    className="flex items-center justify-between text-sm font-semibold text-slate-600 hover:text-blue-600 group py-1"
+                  >
+                    {link.label}
+                    <ExternalLink className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </a>
+                ))}
+              </nav>
             </div>
-          </div>
+          </aside>
         </div>
 
         {/* Footer */}
-        <footer className="mt-12 pt-8 border-t border-slate-200 text-center text-slate-400 text-sm">
-          <p>Basierend auf den Empfehlungen für eine moderne Prüfungskultur in Baden-Württemberg (Stand 2024/25).</p>
+        <footer className="mt-16 pt-8 border-t border-slate-200 text-center space-y-2 pb-10">
+          <p className="text-slate-400 text-sm font-medium italic">
+            "Von der Ergebnisorientierung zur Kompetenzorientierung."
+          </p>
+          <div className="text-[10px] text-slate-300 uppercase tracking-widest">
+            Open Source Education Tool • Baden-Württemberg
+          </div>
         </footer>
       </div>
     </div>
