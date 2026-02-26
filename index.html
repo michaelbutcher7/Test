@@ -14,8 +14,7 @@ import {
 } from 'lucide-react';
 
 /**
- * CONFIGURATION: Prüfungskultur Daten & Logik
- * Zentralisierte Datenhaltung für einfachere Wartung auf GitHub.
+ * KONFIGURATION: Prüfungskultur Daten & Logik
  */
 const EVALUATION_CONFIG = {
   questions: [
@@ -83,7 +82,7 @@ const EVALUATION_CONFIG = {
 };
 
 /**
- * SUB-COMPONENT: Progress Bar
+ * UNTERKOMPONENTE: Fortschrittsanzeige
  */
 const ProgressIndicator = ({ current, total }) => (
   <div className="mb-6 flex justify-between items-center">
@@ -102,7 +101,7 @@ const ProgressIndicator = ({ current, total }) => (
 );
 
 /**
- * SUB-COMPONENT: Sidebar Card
+ * UNTERKOMPONENTE: Sidebar Karte
  */
 const SidebarCard = ({ title, icon: Icon, children, variant = "blue" }) => {
   const themes = {
@@ -124,7 +123,7 @@ const SidebarCard = ({ title, icon: Icon, children, variant = "blue" }) => {
 };
 
 /**
- * MAIN COMPONENT
+ * HAUPTKOMPONENTE
  */
 const App = () => {
   const [step, setStep] = useState(0);
@@ -147,7 +146,6 @@ const App = () => {
     setShowResult(false);
   };
 
-  // Memoized result logic to prevent unnecessary re-calculations
   const recommendation = useMemo(() => {
     if (!showResult) return null;
     const { competence, setting } = answers;
@@ -161,13 +159,13 @@ const App = () => {
     <div className="min-h-screen bg-[#f8fafc] p-4 md:p-10 font-sans text-slate-900 selection:bg-blue-100">
       <div className="max-w-5xl mx-auto">
         
-        {/* Header Section */}
+        {/* Header Sektion */}
         <header className="mb-12 text-center space-y-3">
           <div className="inline-block px-4 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs font-bold uppercase tracking-widest mb-2">
             BW Schul-Edition 2025
           </div>
           <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight md:text-5xl">
-            Prüfungskultur <span className="text-blue-600">&</span> KI
+            Prüfungskultur <span className="text-blue-600">&amp;</span> KI
           </h1>
           <p className="text-slate-500 text-lg max-w-2xl mx-auto">
             Interaktive Entscheidungshilfe für rechtssichere und zeitgemäße Lernergebnis-Überprüfungen.
@@ -176,7 +174,7 @@ const App = () => {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Main Interaction Area */}
+          {/* Hauptbereich */}
           <div className="lg:col-span-8 space-y-6">
             {!showResult ? (
               <section className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 border border-slate-100 p-8 transition-all">
@@ -204,29 +202,31 @@ const App = () => {
               </section>
             ) : (
               <section className="space-y-6 animate-in fade-in zoom-in-95 duration-500">
-                <div className={`p-8 rounded-3xl border-2 shadow-sm ${recommendation.color}`}>
-                  <h2 className="text-2xl font-black mb-4 flex items-center gap-3">
-                    <CheckCircle2 className="w-8 h-8" /> 
-                    Empfehlung: {recommendation.type}
-                  </h2>
-                  <p className="text-lg leading-relaxed mb-8 opacity-90">
-                    {recommendation.description}
-                  </p>
-                  
-                  <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40">
-                    <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
-                      <Lightbulb className={`w-4 h-4 ${recommendation.iconColor}`} /> Praxis-Strategien
-                    </h3>
-                    <ul className="space-y-3">
-                      {recommendation.tips.map((tip, i) => (
-                        <li key={i} className="flex gap-3 items-start text-sm md:text-base font-medium">
-                          <span className={`${recommendation.iconColor} mt-1`}>•</span> 
-                          {tip}
-                        </li>
-                      ))}
-                    </ul>
+                {recommendation && (
+                  <div className={`p-8 rounded-3xl border-2 shadow-sm ${recommendation.color}`}>
+                    <h2 className="text-2xl font-black mb-4 flex items-center gap-3">
+                      <CheckCircle2 className="w-8 h-8" /> 
+                      Empfehlung: {recommendation.type}
+                    </h2>
+                    <p className="text-lg leading-relaxed mb-8 opacity-90">
+                      {recommendation.description}
+                    </p>
+                    
+                    <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 border border-white/40">
+                      <h3 className="font-bold text-slate-900 mb-4 flex items-center gap-2 uppercase text-xs tracking-widest">
+                        <Lightbulb className={`w-4 h-4 ${recommendation.iconColor}`} /> Praxis-Strategien
+                      </h3>
+                      <ul className="space-y-3">
+                        {recommendation.tips.map((tip, i) => (
+                          <li key={i} className="flex gap-3 items-start text-sm md:text-base font-medium">
+                            <span className={`${recommendation.iconColor} mt-1`}>&bull;</span> 
+                            {tip}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
                   </div>
-                </div>
+                )}
                 
                 <button 
                   onClick={reset}
@@ -238,24 +238,24 @@ const App = () => {
               </section>
             )}
 
-            {/* Global BW Context Section */}
+            {/* BW Kontext Sektion */}
             <div className="bg-white rounded-3xl shadow-sm border border-slate-100 p-8">
               <h2 className="text-xl font-bold mb-5 flex items-center gap-3 text-slate-800">
-                <Info className="text-blue-500 w-6 h-6" /> Zeitgemäßes Prüfen in BW
+                <Info className="text-blue-500 w-6 h-6" /> Zeitgem&auml;&szlig;es Pr&uuml;fen in BW
               </h2>
               <div className="text-slate-600 leading-relaxed space-y-4">
                 <p className="text-sm md:text-base">
                   Die aktuelle Leitlinie in BW fordert eine Abkehr von isolierten Wissensabfragen hin zu 
-                  <strong> prozessbegleitenden Formaten</strong>. KI wird dabei nicht als "Feind", sondern als 
+                  <strong> prozessbegleitenden Formaten</strong>. KI wird dabei nicht als &quot;Feind&quot;, sondern als 
                   digitales Werkzeug betrachtet, dessen Nutzung kritisch reflektiert werden muss.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-6">
                   <div className="p-4 bg-amber-50 rounded-xl border-l-4 border-amber-400">
                     <h4 className="font-bold text-amber-900 text-sm mb-1 uppercase tracking-tight">Transparenz-Gebot</h4>
-                    <p className="text-xs text-amber-800/80">Alle Hilfsmittel müssen im Erwartungshorizont klar benannt sein.</p>
+                    <p className="text-xs text-amber-800/80">Alle Hilfsmittel m&uuml;ssen im Erwartungshorizont klar benannt sein.</p>
                   </div>
                   <div className="p-4 bg-blue-50 rounded-xl border-l-4 border-blue-400">
-                    <h4 className="font-bold text-blue-900 text-sm mb-1 uppercase tracking-tight">Prozess {' > '} Produkt</h4>
+                    <h4 className="font-bold text-blue-900 text-sm mb-1 uppercase tracking-tight">Prozess &gt; Produkt</h4>
                     <p className="text-xs text-blue-800/80">Die Dokumentation des Entstehungsweges gewinnt an Gewichtung.</p>
                   </div>
                 </div>
@@ -263,11 +263,11 @@ const App = () => {
             </div>
           </div>
 
-          {/* Sidebar / Resources */}
+          {/* Sidebar / Ressourcen */}
           <aside className="lg:col-span-4 space-y-6">
             <SidebarCard title="Rechtlicher Rahmen" icon={Scale} variant="blue">
-              KI-Tools gelten als "nicht zugelassene Hilfsmittel", sofern sie nicht explizit erlaubt wurden. 
-              Eine Kennzeichnungspflicht (KI-Deklaration) ist für alle schriftlichen Leistungen in BW dringend empfohlen.
+              KI-Tools gelten als &quot;nicht zugelassene Hilfsmittel&quot;, sofern sie nicht explizit erlaubt wurden. 
+              Eine Kennzeichnungspflicht (KI-Deklaration) ist f&uuml;r alle schriftlichen Leistungen in BW dringend empfohlen.
             </SidebarCard>
 
             <SidebarCard title="Das S-O-S Prinzip" icon={ArrowRightLeft} variant="dark">
@@ -279,7 +279,7 @@ const App = () => {
                   <span className="text-purple-400 font-black">O</span>ptimierung: Effizienzsteigerung.
                 </div>
                 <div>
-                  <span className="text-amber-400 font-black">S</span>innstiftung: Neue, KI-gestützte Formate.
+                  <span className="text-amber-400 font-black">S</span>innstiftung: Neue, KI-gest&uuml;tzte Formate.
                 </div>
               </div>
             </SidebarCard>
@@ -309,10 +309,10 @@ const App = () => {
         {/* Footer */}
         <footer className="mt-16 pt-8 border-t border-slate-200 text-center space-y-2 pb-10">
           <p className="text-slate-400 text-sm font-medium italic">
-            "Von der Ergebnisorientierung zur Kompetenzorientierung."
+            &quot;Von der Ergebnisorientierung zur Kompetenzorientierung.&quot;
           </p>
           <div className="text-[10px] text-slate-300 uppercase tracking-widest">
-            Open Source Education Tool • Baden-Württemberg
+            Open Source Education Tool &bull; Baden-W&uuml;rttemberg
           </div>
         </footer>
       </div>
